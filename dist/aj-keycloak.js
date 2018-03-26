@@ -1297,9 +1297,18 @@
         
         Ajkeycloak.instance = this;
 
-        this.keycloak = Keycloak(config);
+        this = Keycloak(config);
     }
 
 
-    window.Ajkeycloak = Ajkeycloak;
+    if ( typeof module === "object" && module && typeof module.exports === "object" ) {
+        module.exports = Ajkeycloak;
+    } else {
+        window.Ajkeycloak = Ajkeycloak;
+
+        if ( typeof define === "function" && define.amd ) {
+            define( "Ajkeycloak", [], function () { return Ajkeycloak; } );
+        }
+    }
+
 })(window);
