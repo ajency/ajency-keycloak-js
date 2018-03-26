@@ -11,7 +11,7 @@
         Ajkeycloak.instance = this;
 
         var keycloak = Keycloak(config);
-        this = keycloak;
+        this.keycloak = keycloak;
     }
 
 
