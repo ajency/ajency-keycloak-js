@@ -15,7 +15,5 @@
     "test",
     "tests"
   ],
-  "dependencies": {
-    "keycloak": "^3.4.3"
-  }
+  "dependencies": {}
 }

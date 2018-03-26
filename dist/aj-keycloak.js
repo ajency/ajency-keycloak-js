@@ -1297,7 +1297,8 @@
         
         Ajkeycloak.instance = this;
 
-        this = Keycloak(config);
+        var keycloak = Keycloak(config);
+        this = keycloak;
     }
 
 

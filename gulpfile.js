@@ -3,8 +3,8 @@ var concat = require('gulp-concat');
 
 var paths = {
     outputfile: 'aj-keycloak.js',
-    dep_keycloak_source: "bower_components/keycloak/dist/keycloak.js",
-    dep_keycloak_minsource: "bower_components/keycloak/dist/keycloak.min.js",
+    dep_keycloak_source: "node_modules/keycloak-js/dist/keycloak.js",
+    dep_keycloak_minsource: "node_modules/keycloak-js/dist/keycloak.min.js",
     dep_src: 'src',
     src: "src/**/*",
     srcHTML: 'src/index.html',
