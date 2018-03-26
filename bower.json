@@ -1,7 +1,7 @@
 {
   "name": "ajency-keycloak-js",
   "description": "a wrapper for keycloak by ajency.in",
-  "main": "src/index.js",
+  "main": "dist/aj-keycloak.js",
   "authors": [
     "Cyrus Furtado <cyrus.furtado@gmail.com>"
   ],
