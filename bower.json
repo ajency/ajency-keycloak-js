@@ -1,0 +1,21 @@
+{
+  "name": "ajency-keycloak-js",
+  "description": "a wrapper for keycloak by ajency.in",
+  "main": "src/index.js",
+  "authors": [
+    "Cyrus Furtado <cyrus.furtado@gmail.com>"
+  ],
+  "license": "ISC",
+  "homepage": "",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "keycloak": "^3.4.3"
+  }
+}
