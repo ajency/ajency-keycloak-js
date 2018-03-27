@@ -10,6 +10,12 @@
         
         Ajkeycloak.instance = this;
 
+        if(config["auth-server-url"])
+            config["url"] = config["auth-server-url"];
+
+        if(config["resource"])
+            config["clientId"] = config["resource"];
+
         var keycloak = Keycloak(config);
         this.keycloak = keycloak;
     }
