@@ -41,11 +41,9 @@
                         }
                     )
                     .then(function(res){
-                        console.log("make request success", res)
                         deferred.resolve(res);
                     })
                     .catch(function(err){
-                        console.warn("make request error: ", err);
                         deferred.reject(err);
                     });    
               })
@@ -56,11 +54,9 @@
         }
         else{  // default authorization
             if(Ajkeycloak.instance.keycloak.authenticated){
-                console.log("success fully authenticalted")
                 deferred.resolve();
             }
             else{
-                console.warn("not authenticalted")
                 deferred.reject();
             }
         }

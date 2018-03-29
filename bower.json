@@ -1,5 +1,5 @@
 {
-  "name": "ajency-keycloak-js",
+  "name": "@ajency/keycloak-js",
   "version": "1.0.2",
   "description": "a wrapper for keycloak by ajency.in",
   "main": "dist/aj-keycloak.js",
