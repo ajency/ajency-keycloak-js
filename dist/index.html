@@ -6,6 +6,15 @@
         <script src="aj-keycloak.js"></script>
 
         <script>
+            window.AJK = Ajkeycloak({});
+
+            AJK.protect({});
+
+            AJK.protect([{
+                "resource_set_name": "test",
+                "scopes": ['read']
+            }]);
+
         </script>
     </body>
 </html>
