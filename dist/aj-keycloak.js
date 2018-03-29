@@ -3517,21 +3517,21 @@ return Q;
 
     Ajkeycloak.prototype.protect = function(permissions){
         var deferred = Q.defer();
-        console.log("type of permissions", typeof permissions);
+
         if(permissions && typeof permissions === 'object' && permissions.length){  // code for entitlements check
             var entitlements = { 
                 "permissions" : permissions
             }
 
-            this.keycloak.updateToken(5).success(function(refreshed){
-                let url = this.CONFIG['url'] + '/realms/' + this.CONFIG['realm'] + '/authz/entitlement/' + this.CONFIG['clientId'];
-                this.makeRequest(
+            Ajkeycloak.keycloak.updateToken(5).success(function(refreshed){
+                let url = Ajkeycloak.CONFIG['url'] + '/realms/' + Ajkeycloak.CONFIG['realm'] + '/authz/entitlement/' + Ajkeycloak.CONFIG['clientId'];
+                Ajkeycloak.makeRequest(
                         url, 
                         'POST',
                         entitlements,
                         {
                             'Content-Type': 'application/json',
-                            'Authorization': 'Bearer ' + this.keycloak.token
+                            'Authorization': 'Bearer ' + Ajkeycloak.keycloak.token
                         }
                     )
                     .then(function(res){
@@ -3549,7 +3549,7 @@ return Q;
 
         }
         else{  // default authorization
-            if(this.keycloak.authenticated){
+            if(Ajkeycloak.keycloak.authenticated){
                 console.log("success fully authenticalted")
                 deferred.resolve();
             }
