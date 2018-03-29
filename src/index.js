@@ -29,15 +29,15 @@
                 "permissions" : permissions
             }
 
-            Ajkeycloak.keycloak.updateToken(5).success(function(refreshed){
-                let url = Ajkeycloak.CONFIG['url'] + '/realms/' + Ajkeycloak.CONFIG['realm'] + '/authz/entitlement/' + Ajkeycloak.CONFIG['clientId'];
-                Ajkeycloak.makeRequest(
+            Ajkeycloak.instance.keycloak.updateToken(5).success(function(refreshed){
+                let url = Ajkeycloak.instance.CONFIG['url'] + '/realms/' + Ajkeycloak.instance.CONFIG['realm'] + '/authz/entitlement/' + Ajkeycloak.instance.CONFIG['clientId'];
+                Ajkeycloak.instance.makeRequest(
                         url, 
                         'POST',
                         entitlements,
                         {
                             'Content-Type': 'application/json',
-                            'Authorization': 'Bearer ' + Ajkeycloak.keycloak.token
+                            'Authorization': 'Bearer ' + Ajkeycloak.instance.keycloak.token
                         }
                     )
                     .then(function(res){
@@ -55,7 +55,7 @@
 
         }
         else{  // default authorization
-            if(Ajkeycloak.keycloak.authenticated){
+            if(Ajkeycloak.instance.keycloak.authenticated){
                 console.log("success fully authenticalted")
                 deferred.resolve();
             }
