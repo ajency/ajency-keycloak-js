@@ -29,27 +29,33 @@
                 "permissions" : permissions
             }
 
-            Ajkeycloak.instance.keycloak.updateToken(5).success(function(refreshed){
-                let url = Ajkeycloak.instance.CONFIG['url'] + '/realms/' + Ajkeycloak.instance.CONFIG['realm'] + '/authz/entitlement/' + Ajkeycloak.instance.CONFIG['clientId'];
-                Ajkeycloak.instance.makeRequest(
-                        url, 
-                        'POST',
-                        entitlements,
-                        {
-                            'Content-Type': 'application/json',
-                            'Authorization': 'Bearer ' + Ajkeycloak.instance.keycloak.token
-                        }
-                    )
-                    .then(function(res){
-                        deferred.resolve(res);
-                    })
-                    .catch(function(err){
-                        deferred.reject(err);
-                    });    
-              })
-              .error(function(err){
-                deferred.reject(err);
-              });
+            try{
+                Ajkeycloak.instance.keycloak.updateToken(5).success(function(refreshed){
+                    let url = Ajkeycloak.instance.CONFIG['url'] + '/realms/' + Ajkeycloak.instance.CONFIG['realm'] + '/authz/entitlement/' + Ajkeycloak.instance.CONFIG['clientId'];
+                    Ajkeycloak.instance.makeRequest(
+                            url, 
+                            'POST',
+                            entitlements,
+                            {
+                                'Content-Type': 'application/json',
+                                'Authorization': 'Bearer ' + Ajkeycloak.instance.keycloak.token
+                            }
+                        )
+                        .then(function(res){
+                            var json = JSON.parse(res);
+                            deferred.resolve(json);
+                        })
+                        .catch(function(err){
+                            deferred.reject(err);
+                        });    
+                  })
+                  .error(function(err){
+                    deferred.reject(err);
+                  });
+            }
+            catch(e){
+                deferred.reject(e);
+            }
 
         }
         else{  // default authorization
@@ -80,7 +86,7 @@
         request.onreadystatechange = function() {
             if (this.readyState == 4) {
                 if(this.status == 200){
-                    deferred.resolve(this);
+                    deferred.resolve(this.response);
                 }
                 else{
                     deferred.reject(this);
@@ -94,6 +100,17 @@
         return deferred.promise;
     }
 
+    Ajkeycloak.prototype.jwtDecode = function(jwt){
+        if(window && window.atob){
+            var base64Url = token.split('.')[1];
+            var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            return JSON.parse(atob(base64));
+        }
+        else{
+            console.warn("no base64 decode support");
+            return false;
+        }
+    }
 
     if ( typeof module === "object" && module && typeof module.exports === "object" ) {
         module.exports = Ajkeycloak;
