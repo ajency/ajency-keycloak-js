@@ -3537,7 +3537,10 @@ return Q;
                         )
                         .then(function(res){
                             var json = JSON.parse(res);
-                            deferred.resolve(json);
+                            if(json.rpt)
+                                deferred.resolve( Ajkeycloak.instance.jwtDecode(json.rpt) );
+                            else
+                                deferred.resolve(json);
                         })
                         .catch(function(err){
                             deferred.reject(err);
@@ -3596,7 +3599,7 @@ return Q;
 
     Ajkeycloak.prototype.jwtDecode = function(jwt){
         if(window && window.atob){
-            var base64Url = token.split('.')[1];
+            var base64Url = jwt.split('.')[1];
             var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
             return JSON.parse(atob(base64));
         }
