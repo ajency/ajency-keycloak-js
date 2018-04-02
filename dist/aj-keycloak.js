@@ -3614,44 +3614,61 @@ return Q;
 
     Ajkeycloak.prototype.hasAccess = function(permissions){
         var decoded_rpt = Ajkeycloak.instance.decoded_rpt;
-        if(permissions && permissions.length && decoded_rpt){
-            if(decoded_rpt.authorization && decoded_rpt.authorization.permissions && decoded_rpt.authorization.permissions.length){
+        if(permissions && permissions.length){
+            if(decoded_rpt && decoded_rpt.authorization && decoded_rpt.authorization.permissions && decoded_rpt.authorization.permissions.length){
                 // check for permissions here
                 var rpt_permissions = decoded_rpt.authorization.permissions;
 
+                var globalmatch = true;
                 rpt_permissions.map(function(rpt_perm){
                     var req_perm = permissions.find(function(perm){
-                        perm.resource_set_name = rpt_perm.resource_set_name;
+                        return perm.resource_set_name === rpt_perm.resource_set_name;
                     });
 
                     if(req_perm){
 
                         if(req_perm.scopes && rpt_perm.scopes){
-                            var scopematch = req_perm.scopes.reduce(function(acc, reqscope, index){
+                            var scopematch = true;
+                            req_perm.scopes.map(function(reqscope){
                                 var found = rpt_perm.scopes.some(function(resscope){
                                     return reqscope === resscope;
                                 });
 
                                 if(!found)
-                                    acc = false;
- 
-                            },true);
+                                    scopematch = false;
+
+                            });
     
-                            console.log("scope match: ", scopematch);
-    
-                            return scopematch;
+                            if(!scopematch){
+                                console.warn("missing scope match for ", rpt_perm.resource_set_name);
+                                globalmatch = scopematch;
+                                return globalmatch;
+                            }
+
                         }
                         else{
-                            return false;
+                            if(!req_perm.scopes && !rpt_perm.scopes){
+                                console.warn("no scopes present");
+                                return true;
+                            }
+                            else{
+                                console.warn("scopes mismatch");
+                                globalmatch = false;
+                                return globalmatch;
+                            }
+
                         }
     
                     }
                     else{
                         console.warn(rpt_perm.resource_set_name + " not present");
-                        return false;
+                        globalmatch = false;
+                        return globalmatch;
                     }
-                });
+                }); // end rpt_permissions map 
 
+                console.log("permissions match", globalmatch);
+                return globalmatch;
             }
             else{
                 console.warn("no permissions in rpt");
@@ -3659,7 +3676,7 @@ return Q;
             }
         }
         else{
-            console.warn(" no permissions / rpt");
+            console.warn(" no permissions");
             return false;
         }
     }
