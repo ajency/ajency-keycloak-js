@@ -121,33 +121,43 @@
     Ajkeycloak.prototype.hasAccess = function(permissions){
         var decoded_rpt = Ajkeycloak.instance.decoded_rpt;
         if(permissions && permissions.length && decoded_rpt){
-            if(decoded_rpt.authorization && decoded_rpt.authorization.permissions){
+            if(decoded_rpt.authorization && decoded_rpt.authorization.permissions && decoded_rpt.authorization.permissions.length){
                 // check for permissions here
                 var rpt_permissions = decoded_rpt.authorization.permissions;
 
-                if(rpt_permissions.resource_set_name && rpt_permissions.resource_set_name === permissions.resource_set_name){
+                rpt_permissions.map(function(rpt_perm){
+                    var req_perm = permissions.find(function(perm){
+                        perm.resource_set_name = rpt_perm.resource_set_name;
+                    });
 
-                    if(permissions.scopes && rpt_permissions.scopes){
-                        var scopematch = permissions.scopes.reduce(function(acc, reqscope, index){
-                            var found = rpt_permissions.scopes.some(function(resscope){
-                                return reqscope === resscope;
-                            });
-                            acc = found ? true : false;
-                        },false);
+                    if(req_perm){
 
-                        console.log("scope match: ", scopematch);
+                        if(req_perm.scopes && rpt_perm.scopes){
+                            var scopematch = req_perm.scopes.reduce(function(acc, reqscope, index){
+                                var found = rpt_perm.scopes.some(function(resscope){
+                                    return reqscope === resscope;
+                                });
 
-                        return scopematch;
+                                if(!found)
+                                    acc = false;
+ 
+                            },true);
+    
+                            console.log("scope match: ", scopematch);
+    
+                            return scopematch;
+                        }
+                        else{
+                            return false;
+                        }
+    
                     }
                     else{
+                        console.warn(rpt_perm.resource_set_name + " not present");
                         return false;
                     }
+                });
 
-                }
-                else{
-                    console.warn(permissions.resource_set_name + " not allowed");
-                    return false;
-                }
             }
             else{
                 console.warn("no permissions in rpt");
