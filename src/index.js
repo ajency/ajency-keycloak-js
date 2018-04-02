@@ -23,7 +23,7 @@
 
     Ajkeycloak.prototype.protect = function(permissions){
         var deferred = Q.defer();
-
+        Ajkeycloak.instance.decoded_rpt = null;
         if(permissions && typeof permissions === 'object' && permissions.length){  // code for entitlements check
             var entitlements = { 
                 "permissions" : permissions
@@ -43,10 +43,13 @@
                         )
                         .then(function(res){
                             var json = JSON.parse(res);
-                            if(json.rpt)
-                                deferred.resolve( Ajkeycloak.instance.jwtDecode(json.rpt) );
-                            else
+                            if(json.rpt){
+                                Ajkeycloak.instance.decoded_rpt = Ajkeycloak.instance.jwtDecode(json.rpt);
+                                deferred.resolve( Ajkeycloak.instance.decoded_rpt );
+                            }
+                            else{
                                 deferred.resolve(json);
+                            }
                         })
                         .catch(function(err){
                             deferred.reject(err);
@@ -111,6 +114,48 @@
         }
         else{
             console.warn("no base64 decode support");
+            return false;
+        }
+    }
+
+    Ajkeycloak.prototype.hasAccess = function(permissions){
+        var decoded_rpt = Ajkeycloak.instance.decoded_rpt;
+        if(permissions && permissions.length && decoded_rpt){
+            if(decoded_rpt.authorization && decoded_rpt.authorization.permissions){
+                // check for permissions here
+                var rpt_permissions = decoded_rpt.authorization.permissions;
+
+                if(rpt_permissions.resource_set_name && rpt_permissions.resource_set_name === permissions.resource_set_name){
+
+                    if(permissions.scopes && rpt_permissions.scopes){
+                        var scopematch = permissions.scopes.reduce(function(acc, reqscope, index){
+                            var found = rpt_permissions.scopes.some(function(resscope){
+                                return reqscope === resscope;
+                            });
+                            acc = found ? true : false;
+                        },false);
+
+                        console.log("scope match: ", scopematch);
+
+                        return scopematch;
+                    }
+                    else{
+                        return false;
+                    }
+
+                }
+                else{
+                    console.warn(permissions.resource_set_name + " not allowed");
+                    return false;
+                }
+            }
+            else{
+                console.warn("no permissions in rpt");
+                return false;
+            }
+        }
+        else{
+            console.warn(" no permissions / rpt");
             return false;
         }
     }
