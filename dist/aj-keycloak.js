@@ -3560,10 +3560,10 @@ return Q;
             }
             else{  // default authorization
                 if(Ajkeycloak.instance.keycloak.authenticated){
-                    deferred.resolve();
+                    deferred.resolve({});
                 }
                 else{
-                    deferred.reject();
+                    deferred.reject({});
                 }
             }
 
@@ -3619,7 +3619,7 @@ return Q;
                 // check for permissions here
                 var rpt_permissions = decoded_rpt.authorization.permissions;
 
-                var globalmatch = true;
+                var permission_status = true;
                 rpt_permissions.map(function(rpt_perm){
                     var req_perm = permissions.find(function(perm){
                         return perm.resource_set_name === rpt_perm.resource_set_name;
@@ -3641,8 +3641,8 @@ return Q;
     
                             if(!scopematch){
                                 console.warn("missing scope match for ", rpt_perm.resource_set_name);
-                                globalmatch = scopematch;
-                                return globalmatch;
+                                permission_status = scopematch;
+                                return permission_status;
                             }
 
                         }
@@ -3653,8 +3653,8 @@ return Q;
                             }
                             else{
                                 console.warn("scopes mismatch");
-                                globalmatch = false;
-                                return globalmatch;
+                                permission_status = false;
+                                return permission_status;
                             }
 
                         }
@@ -3662,13 +3662,13 @@ return Q;
                     }
                     else{
                         console.warn(rpt_perm.resource_set_name + " not present");
-                        globalmatch = false;
-                        return globalmatch;
+                        permission_status = false;
+                        return permission_status;
                     }
                 }); // end rpt_permissions map 
 
-                console.log("permissions match", globalmatch);
-                return globalmatch;
+                console.log("permissions status: ", permission_status);
+                return permission_status;
             }
             else{
                 console.warn("no permissions in rpt");
