@@ -1,6 +1,6 @@
 {
   "name": "ajency-keycloak-js",
-  "version": "1.0.4",
+  "version": "1.1.0",
   "description": "a wrapper for keycloak by ajency.in",
   "main": "dist/aj-keycloak.js",
   "authors": [
