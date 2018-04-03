@@ -16,12 +16,11 @@
         if(config["resource"])
             config["clientId"] = config["resource"];
 
-        var keycloak = Keycloak(config);
         this.CONFIG = config;
-        this.keycloak = keycloak;
+        this.keycloak = Keycloak(config);
     }
 
-    Ajkeycloak.prototype.protect = function(permissions){
+    Ajkeycloak.prototype.protect = function(permissions, successcb, errorcb){
         var deferred = Q.defer();
         Ajkeycloak.instance.decoded_rpt = null;
         if(permissions && permissions.length){  // code for entitlements check
@@ -45,31 +44,31 @@
                             var json = JSON.parse(res);
                             if(json.rpt){
                                 Ajkeycloak.instance.decoded_rpt = Ajkeycloak.instance.jwtDecode(json.rpt);
-                                deferred.resolve( Ajkeycloak.instance.decoded_rpt );
+                                Ajkeycloak.instance.successAction( Ajkeycloak.instance.decoded_rpt, deferred, successcb );
                             }
                             else{
-                                deferred.resolve(json);
+                                Ajkeycloak.instance.successAction(json, deferred, successcb);
                             }
                         })
                         .catch(function(err){
-                            deferred.reject(err);
+                            Ajkeycloak.instance.failureAction(err, deferred, errorcb);
                         });    
                   })
                   .error(function(err){
-                    deferred.reject(err);
+                    Ajkeycloak.instance.failureAction(err, deferred, errorcb);
                   });
             }
             catch(e){
-                deferred.reject(e);
+                Ajkeycloak.instance.failureAction(e, deferred, errorcb);
             }
 
             }
             else{  // default authorization
                 if(Ajkeycloak.instance.keycloak.authenticated){
-                    deferred.resolve({});
+                    Ajkeycloak.instance.successAction({}, deferred, successcb);
                 }
                 else{
-                    deferred.reject({});
+                    Ajkeycloak.instance.failureAction({}, deferred, errorcb);
                 }
             }
 
@@ -92,10 +91,10 @@
             request.onreadystatechange = function() {
                 if (this.readyState == 4) {
                     if(this.status == 200){
-                        deferred.resolve(this.response);
+                        Ajkeycloak.instance.successAction(this.response, deferred, null);
                     }
                     else{
-                        deferred.reject(this.response);
+                        Ajkeycloak.instance.failureAction(this.response, deferred, null);
                     }
                 }
             };
@@ -118,74 +117,84 @@
             }
         };
 
-    Ajkeycloak.prototype.hasAccess = function(permissions){
-        var decoded_rpt = Ajkeycloak.instance.decoded_rpt;
-        if(permissions && permissions.length){
-            if(decoded_rpt && decoded_rpt.authorization && decoded_rpt.authorization.permissions && decoded_rpt.authorization.permissions.length){
-                // check for permissions here
-                var rpt_permissions = decoded_rpt.authorization.permissions;
+    Ajkeycloak.prototype.hasAccess = function(permissions){ //synchronous no promise required
+            var decoded_rpt = Ajkeycloak.instance.decoded_rpt;
+            if(permissions && permissions.length){
+                if(decoded_rpt && decoded_rpt.authorization && decoded_rpt.authorization.permissions && decoded_rpt.authorization.permissions.length){
+                    // check for permissions here
+                    var rpt_permissions = decoded_rpt.authorization.permissions;
 
-                var permission_status = true;
-                rpt_permissions.map(function(rpt_perm){
-                    var req_perm = permissions.find(function(perm){
-                        return perm.resource_set_name === rpt_perm.resource_set_name;
-                    });
+                    var permission_status = true;
+                    rpt_permissions.map(function(rpt_perm){
+                        var req_perm = permissions.find(function(perm){
+                            return perm.resource_set_name === rpt_perm.resource_set_name;
+                        });
 
-                    if(req_perm){
+                        if(req_perm){
 
-                        if(req_perm.scopes && rpt_perm.scopes){
-                            var scopematch = true;
-                            req_perm.scopes.map(function(reqscope){
-                                var found = rpt_perm.scopes.some(function(resscope){
-                                    return reqscope === resscope;
+                            if(req_perm.scopes && rpt_perm.scopes){
+                                var scopematch = true;
+                                req_perm.scopes.map(function(reqscope){
+                                    var found = rpt_perm.scopes.some(function(resscope){
+                                        return reqscope === resscope;
+                                    });
+
+                                    if(!found)
+                                        scopematch = false;
+
                                 });
+        
+                                if(!scopematch){
+                                    console.warn("missing scope match for ", rpt_perm.resource_set_name);
+                                    permission_status = scopematch;
+                                    return permission_status;
+                                }
 
-                                if(!found)
-                                    scopematch = false;
-
-                            });
-    
-                            if(!scopematch){
-                                console.warn("missing scope match for ", rpt_perm.resource_set_name);
-                                permission_status = scopematch;
-                                return permission_status;
-                            }
-
-                        }
-                        else{
-                            if(!req_perm.scopes && !rpt_perm.scopes){
-                                console.warn("no scopes present");
-                                return true;
                             }
                             else{
-                                console.warn("scopes mismatch");
-                                permission_status = false;
-                                return permission_status;
+                                if(!req_perm.scopes && !rpt_perm.scopes){
+                                    console.warn("no scopes present");
+                                    return true;
+                                }
+                                else{
+                                    console.warn("scopes mismatch");
+                                    permission_status = false;
+                                    return permission_status;
+                                }
+
                             }
-
+        
                         }
-    
-                    }
-                    else{
-                        console.warn(rpt_perm.resource_set_name + " not present");
-                        permission_status = false;
-                        return permission_status;
-                    }
-                }); // end rpt_permissions map 
+                        else{
+                            console.warn(rpt_perm.resource_set_name + " not present");
+                            permission_status = false;
+                            return permission_status;
+                        }
+                    }); // end rpt_permissions map 
 
-                console.log("permissions status: ", permission_status);
-                return permission_status;
+                    console.log("permissions status: ", permission_status);
+                    return permission_status;
+                }
+                else{
+                    console.warn("no permissions in rpt");
+                    return false;
+                }
             }
             else{
-                console.warn("no permissions in rpt");
+                console.warn(" no permissions");
                 return false;
             }
-        }
-        else{
-            console.warn(" no permissions");
-            return false;
-        }
-    }
+        };
+
+    Ajkeycloak.prototype.successAction = function(result, deferred, callback){
+            typeof callback === 'function' ? callback(result) : null;
+            deferred.resolve(result);
+        };
+
+    Ajkeycloak.prototype.failureAction = function(error, deferred, callback){
+            typeof callback === 'function' ? callback(error) : null;
+            deferred.reject(error);
+        };
 
     if ( typeof module === "object" && module && typeof module.exports === "object" ) {
         module.exports = Ajkeycloak;

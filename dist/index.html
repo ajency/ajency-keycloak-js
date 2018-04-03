@@ -13,7 +13,11 @@
             AJK.protect([{
                 "resource_set_name": "test",
                 "scopes": ['read']
-            }]);
+            }], function(res){
+
+            },function(err){
+                console.log("protect err:", err);
+            });
 
         </script>
     </body>
