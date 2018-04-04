@@ -45,7 +45,7 @@
         
                     try{
                         Ajkeycloak.instance.keycloak.updateToken(5).success(function(refreshed){
-                            let url = Ajkeycloak.instance.CONFIG['url'] + '/realms/' + Ajkeycloak.instance.CONFIG['realm'] + '/authz/entitlement/' + Ajkeycloak.instance.CONFIG['clientId'];
+                            var url = Ajkeycloak.instance.CONFIG['url'] + '/realms/' + Ajkeycloak.instance.CONFIG['realm'] + '/authz/entitlement/' + Ajkeycloak.instance.CONFIG['clientId'];
                             Ajkeycloak.instance.makeRequest(
                                     url, 
                                     'POST',
