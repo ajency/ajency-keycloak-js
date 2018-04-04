@@ -118,85 +118,85 @@
                     
                     return deferred.promise;
                 },
-                jwtDecode: function(jwt){
-                        if(window && window.atob){
-                            var base64Url = jwt.split('.')[1];
-                            var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-                            return JSON.parse(atob(base64));
-                        }
-                        else{
-                            console.warn("no base64 decode support");
-                            return false;
-                        }
-                    },
-                hasAccess: function(permissions){ //synchronous no promise required
-                    var decoded_rpt = Ajkeycloak.instance.decoded_rpt;
-                    if(permissions && permissions.length){
-                        if(decoded_rpt && decoded_rpt.authorization && decoded_rpt.authorization.permissions && decoded_rpt.authorization.permissions.length){
-                            // check for permissions here
-                            var rpt_permissions = decoded_rpt.authorization.permissions;
-        
-                            var permission_status = true;
-                            rpt_permissions.map(function(rpt_perm){
-                                var req_perm = permissions.find(function(perm){
-                                    return perm.resource_set_name === rpt_perm.resource_set_name;
-                                });
-        
-                                if(req_perm){
-        
-                                    if(req_perm.scopes && rpt_perm.scopes){
-                                        var scopematch = true;
-                                        req_perm.scopes.map(function(reqscope){
-                                            var found = rpt_perm.scopes.some(function(resscope){
-                                                return reqscope === resscope;
-                                            });
-        
-                                            if(!found)
-                                                scopematch = false;
-        
-                                        });
-                
-                                        if(!scopematch){
-                                            console.warn("missing scope match for ", rpt_perm.resource_set_name);
-                                            permission_status = scopematch;
-                                            return permission_status;
-                                        }
-        
-                                    }
-                                    else{
-                                        if(!req_perm.scopes && !rpt_perm.scopes){
-                                            console.warn("no scopes present");
-                                            return true;
-                                        }
-                                        else{
-                                            console.warn("scopes mismatch");
-                                            permission_status = false;
-                                            return permission_status;
-                                        }
-        
-                                    }
-                
-                                }
-                                else{
-                                    console.warn(rpt_perm.resource_set_name + " not present");
-                                    permission_status = false;
-                                    return permission_status;
-                                }
-                            }); // end rpt_permissions map 
-        
-                            console.log("permissions status: ", permission_status);
-                            return permission_status;
-                        }
-                        else{
-                            console.warn("no permissions in rpt");
-                            return false;
-                        }
+            jwtDecode: function(jwt){
+                    if(window && window.atob){
+                        var base64Url = jwt.split('.')[1];
+                        var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                        return JSON.parse(atob(base64));
                     }
                     else{
-                        console.warn(" no permissions");
+                        console.warn("no base64 decode support");
+                        return false;
+                    }
+                },
+            hasAccess: function(permissions){ //synchronous no promise required
+                var decoded_rpt = Ajkeycloak.instance.decoded_rpt;
+                if(permissions && permissions.length){
+                    if(decoded_rpt && decoded_rpt.authorization && decoded_rpt.authorization.permissions && decoded_rpt.authorization.permissions.length){
+                        // check for permissions here
+                        var rpt_permissions = decoded_rpt.authorization.permissions;
+    
+                        var permission_status = true;
+                        rpt_permissions.map(function(rpt_perm){
+                            var req_perm = permissions.find(function(perm){
+                                return perm.resource_set_name === rpt_perm.resource_set_name;
+                            });
+    
+                            if(req_perm){
+    
+                                if(req_perm.scopes && rpt_perm.scopes){
+                                    var scopematch = true;
+                                    req_perm.scopes.map(function(reqscope){
+                                        var found = rpt_perm.scopes.some(function(resscope){
+                                            return reqscope === resscope;
+                                        });
+    
+                                        if(!found)
+                                            scopematch = false;
+    
+                                    });
+            
+                                    if(!scopematch){
+                                        console.warn("missing scope match for ", rpt_perm.resource_set_name);
+                                        permission_status = scopematch;
+                                        return permission_status;
+                                    }
+    
+                                }
+                                else{
+                                    if(!req_perm.scopes && !rpt_perm.scopes){
+                                        console.warn("no scopes present");
+                                        return true;
+                                    }
+                                    else{
+                                        console.warn("scopes mismatch");
+                                        permission_status = false;
+                                        return permission_status;
+                                    }
+    
+                                }
+            
+                            }
+                            else{
+                                console.warn(rpt_perm.resource_set_name + " not present");
+                                permission_status = false;
+                                return permission_status;
+                            }
+                        }); // end rpt_permissions map 
+    
+                        console.log("permissions status: ", permission_status);
+                        return permission_status;
+                    }
+                    else{
+                        console.warn("no permissions in rpt");
                         return false;
                     }
                 }
+                else{
+                    console.warn(" no permissions");
+                    return false;
+                }
+            }
 
         }
     })()
