@@ -3536,41 +3536,43 @@ return Q;
                     }
                 },
             bootstrap: function(jsonpath,keycloakoptions,bootstrapAngularCB){
-  
-                Ajkeycloak.instance.makeRequest(jsonpath)
+                try{
+                    Ajkeycloak.instance.makeRequest(jsonpath)
                     .then( function(keycloakjson) {
                         //do stuff with your data here
-                        console.log("keycloak json", keycloakjson);
-                        
-                        Ajkeycloak.instance.initialise(keycloakjson);
+                        Ajkeycloak.instance.initialise(JSON.parse(keycloakjson));
 
                         var ajkeycloak = Ajkeycloak.instance;
                   
-                        ajkeycloak.keycloak.init({
-                            onLoad: 'login-required'
-                        }).success(function () {
-                          ajkeycloak.keycloak.loadUserInfo().success(function (userInfo) {
-                              console.log("userinfo", userInfo);
-                                // if(keycloak.hasResourceRole('angular-js-app-role')){
-                                if(typeof bootstrapAngularCB === 'function'){
-                                    bootstrapAngularCB(ajkeycloak,userInfo);
-                                }
-                                else{
-                                    console.warn("invalid bootstrap callback");
-                                }
-                                // }
-                            })
-                            .error(function(error){
-                              console.warn("user info error: ", error);
-                            });
-                        })
-                        .error(function(err){
-                            console.warn("init error:", err);
-                        });
+                        ajkeycloak.keycloak.init(keycloakoptions)
+                                        .success(function () {
+                                        ajkeycloak.keycloak.loadUserInfo().success(function (userInfo) {
+                                            console.log("userinfo", userInfo);
+                                                // if(keycloak.hasResourceRole('angular-js-app-role')){
+                                                if(typeof bootstrapAngularCB === 'function'){
+                                                    bootstrapAngularCB(ajkeycloak,userInfo);
+                                                }
+                                                else{
+                                                    console.warn("invalid bootstrap callback");
+                                                }
+                                                // }
+                                            })
+                                            .error(function(error){
+                                            console.warn("user info error: ", error);
+                                            });
+                                        })
+                                        .error(function(err){
+                                            console.warn("init error:", err);
+                                        });
                     }).catch(function(err){
                         console.warn("keycloak json error: ", err);
                     });
               
+
+                }
+                catch(e){
+                    console.warn("bootstrap error: ", e);
+                }
               },
             protect: function(permissions, successcb, errorcb){
                 var deferred = Q.defer();
