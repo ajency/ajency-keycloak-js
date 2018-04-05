@@ -3563,6 +3563,9 @@ return Q;
                             .error(function(error){
                               console.warn("user info error: ", error);
                             });
+                        })
+                        .error(function(err){
+                            console.warn("init error:", err);
                         });
                     }).catch(function(err){
                         console.warn("keycloak json error: ", err);
