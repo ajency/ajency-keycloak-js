@@ -193,8 +193,7 @@
                     }
                 }
                 else{
-                    console.warn(" no permissions");
-                    return false;
+                    return Ajkeycloak.instance.keycloak.authenticated;
                 }
             }
 
