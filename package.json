@@ -1,12 +1,12 @@
 {
-  "name": "@ajency/keycloak-js",
+  "name": "ajency-keycloak-js",
   "version": "1.2.0",
   "description": "a wrapper for keycloak by ajency.in",
   "main": "dist/aj-keycloak.js",
   "scripts": {
     "test": "mocha --reporter spec"
   },
-  "author": "Cyrus Furtado <cyrus.furtado@gmail.com>",
+  "author": "Cyrus Furtado",
   "license": "ISC",
   "devDependencies": {
     "chai": "^4.1.2",
