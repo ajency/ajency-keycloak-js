@@ -10,15 +10,9 @@
         
         Ajkeycloak.instance = this;
 
-        if(config["auth-server-url"])
-            config["url"] = config["auth-server-url"];
 
-        if(config["resource"])
-            config["clientId"] = config["resource"];
-
-        this.CONFIG = config;
-        this.keycloak = Keycloak(config);
-    }
+        this.initialise(config);
+    } // end contructor
 
     Ajkeycloak.prototype = (function(){
 
@@ -35,6 +29,57 @@
 
         return {
             constructor: Ajkeycloak,
+            initialise: function(config){
+                    if(config){
+                        if(config["auth-server-url"])
+                            config["url"] = config["auth-server-url"];
+            
+                        if(config["resource"])
+                            config["clientId"] = config["resource"];
+            
+                        Ajkeycloak.instance.CONFIG = config;
+                        Ajkeycloak.instance.keycloak = Keycloak(config);
+                    }
+                },
+            bootstrap: function(jsonpath,keycloakoptions,bootstrapAngularCB){
+                try{
+                    Ajkeycloak.instance.makeRequest(jsonpath)
+                    .then( function(keycloakjson) {
+                        //do stuff with your data here
+                        Ajkeycloak.instance.initialise(JSON.parse(keycloakjson));
+
+                        var ajkeycloak = Ajkeycloak.instance;
+                  
+                        ajkeycloak.keycloak.init(keycloakoptions)
+                                        .success(function () {
+                                        ajkeycloak.keycloak.loadUserInfo().success(function (userInfo) {
+                                            console.log("userinfo", userInfo);
+                                                // if(keycloak.hasResourceRole('angular-js-app-role')){
+                                                if(typeof bootstrapAngularCB === 'function'){
+                                                    bootstrapAngularCB(ajkeycloak,userInfo);
+                                                }
+                                                else{
+                                                    console.warn("invalid bootstrap callback");
+                                                }
+                                                // }
+                                            })
+                                            .error(function(error){
+                                            console.warn("user info error: ", error);
+                                            });
+                                        })
+                                        .error(function(err){
+                                            console.warn("init error:", err);
+                                        });
+                    }).catch(function(err){
+                        console.warn("keycloak json error: ", err);
+                    });
+              
+
+                }
+                catch(e){
+                    console.warn("bootstrap error: ", e);
+                }
+              },
             protect: function(permissions, successcb, errorcb){
                 var deferred = Q.defer();
                 Ajkeycloak.instance.decoded_rpt = null;
