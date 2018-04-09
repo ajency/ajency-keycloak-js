@@ -4,7 +4,7 @@ A wrapper library for keycloak javscript adapter with some additional functional
 
 ## Installation
 
-`npm install --save https://github.com/ajency/ajency-keycloak-js.git`
+`bower install --save ajency-keycloak-js`
 
 ## Basic Usage
 
@@ -13,18 +13,10 @@ A wrapper library for keycloak javscript adapter with some additional functional
     // boostrapping code for your front end app
   }
 
-  var ajkeycloak = Ajkeycloak(<keycloak-installation-json>);
-  
-  ajkeycloak.keycloak.init({
-      onLoad: 'login-required'
-  }).success(function () {
-    ajkeycloak.keycloak.loadUserInfo().success(function (userInfo) {
-            bootstrapApp();
-      })
-      .error(function(error){
-        alert(error);
-      });
-  });
+  Ajkeycloak().bootstrap('keycloak.json',{
+    onLoad: 'login-required'
+  },bootstrapApp)
+
 ```
 
 ## Tests
