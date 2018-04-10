@@ -53,15 +53,15 @@
                         ajkeycloak.keycloak.init(keycloakoptions)
                                         .success(function () {
                                         ajkeycloak.keycloak.loadUserInfo().success(function (userInfo) {
-                                            console.log("userinfo", userInfo);
-                                                // if(keycloak.hasResourceRole('angular-js-app-role')){
+                                            // console.log("userinfo", userInfo);
+                
                                                 if(typeof bootstrapAngularCB === 'function'){
                                                     bootstrapAngularCB(ajkeycloak,userInfo);
                                                 }
                                                 else{
                                                     console.warn("invalid bootstrap callback");
                                                 }
-                                                // }
+                                   
                                             })
                                             .error(function(error){
                                             console.warn("user info error: ", error);
@@ -202,7 +202,7 @@
                                     });
             
                                     if(!scopematch){
-                                        console.warn("missing scope match for ", rpt_perm.resource_set_name);
+                                        // console.warn("missing scope match for ", rpt_perm.resource_set_name);
                                         permission_status = scopematch;
                                         return permission_status;
                                     }
@@ -210,11 +210,11 @@
                                 }
                                 else{
                                     if(!req_perm.scopes && !rpt_perm.scopes){
-                                        console.warn("no scopes present");
+                                        // console.warn("no scopes present");
                                         return true;
                                     }
                                     else{
-                                        console.warn("scopes mismatch");
+                                        // console.warn("scopes mismatch");
                                         permission_status = false;
                                         return permission_status;
                                     }
@@ -223,17 +223,17 @@
             
                             }
                             else{
-                                console.warn(rpt_perm.resource_set_name + " not present");
+                                // console.warn(rpt_perm.resource_set_name + " not present");
                                 permission_status = false;
                                 return permission_status;
                             }
                         }); // end rpt_permissions map 
     
-                        console.log("permissions status: ", permission_status);
+                        // console.log("permissions status: ", permission_status);
                         return permission_status;
                     }
                     else{
-                        console.warn("no permissions in rpt");
+                        // console.warn("no permissions in rpt");
                         return false;
                     }
                 }
