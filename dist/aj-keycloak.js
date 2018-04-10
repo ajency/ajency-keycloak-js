@@ -3594,7 +3594,7 @@ return Q;
                             angularmodulename = angularoptions.angularmodule.name;
                         }
                         else{
-                            console.log("angularmodule property has incorrect format");
+                            console.warn("angularmodule property has incorrect format");
                             return;
                         }
                     }
@@ -3625,12 +3625,16 @@ return Q;
                         angularmoduleinstance.constant("$ajkeycloak",keycloakinstance); // add keycloak instance as constant
                         angularmoduleinstance.constant("KEYCLOAKINFO", keycloakuserInfo); // add keycloak user info as constant
                         
-                        angularmoduleinstance.service('ajkeycloakservice',function($rootScope){
-                            $rootScope.ajkeycloak = ajkeycloak;
+                        angularmoduleinstance.service('ajkeycloakservice',function($rootScope, KCuiPermissions){
+                            $rootScope.ajkeycloak = keycloakinstance;
                             $rootScope.KCuiPermissions = KCuiPermissions;
 
-                            this.ajkeycloak = ajkeycloak;
-                            this.userInfo = userInfo;
+                            
+                                this.inValidApiAccess = false,
+                                this.instance = keycloakinstance,
+                                this.userInfo = keycloakuserInfo
+                            
+           
                         });
  
 
