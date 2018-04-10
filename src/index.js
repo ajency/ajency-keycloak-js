@@ -6,7 +6,7 @@
         }
 
         if(Ajkeycloak.instance)
-            return this;
+            return Ajkeycloak.instance;
         
         Ajkeycloak.instance = this;
 
