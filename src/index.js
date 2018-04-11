@@ -151,7 +151,7 @@
                             for(var servicename in angularoptions.helperservices){
                                 var servicecontainer = angularoptions.helperservices[servicename];
                 
-                                if(servicecontainer.service && (typeof servicecontainer.service === 'function' || servicecontainer.service === 'object') ){
+                                if(servicecontainer.service && (typeof servicecontainer.service === 'function' || typeof servicecontainer.service === 'object') ){
                                     var servicetype = servicecontainer.type;
                                     if( servicetype === 'factory' ){
                                         angularmoduleinstance.factory(servicename, servicecontainer.service);
