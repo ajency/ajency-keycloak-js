@@ -3608,7 +3608,7 @@ return Q;
                         return;
                     }
 
-                    if(!angularoptions.runblock || typeof angularoptions.runblock !== 'function' ||  typeof angularoptions.runblock !== 'object'){
+                    if( !( angularoptions.runblock && (typeof angularoptions.runblock === 'function' ||  typeof angularoptions.runblock === 'object') ) ){
                         console.warn("options is missing runblock callback or has incorrect format");
                         return;
                     }
