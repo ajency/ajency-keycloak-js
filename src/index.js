@@ -6,7 +6,7 @@
         }
 
         if(Ajkeycloak.instance)
-            return this;
+            return Ajkeycloak.instance;
         
         Ajkeycloak.instance = this;
 
@@ -80,6 +80,108 @@
                     console.warn("bootstrap error: ", e);
                 }
               },
+            bootstrapAngular: function(angularoptions , bootstrapAngularCB){
+
+                    if(!angular){
+                        console.warn("angular is not defined");
+                        return
+                    }
+
+                    if(!angularoptions.keycloakjson){
+                        console.warn("missing keycloak json path");
+                        return;
+                    }
+
+                    // perform validations on passed in options dictionary
+                    var angularmoduleinstance, angularmodulename;
+                    if(angularoptions.angularmodule){
+                        if(angularoptions.angularmodule.name && typeof angularoptions.angularmodule.name === 'string' && angularoptions.angularmodule.instance){
+                            angularmoduleinstance = angularoptions.angularmodule.instance;
+                            angularmodulename = angularoptions.angularmodule.name;
+                        }
+                        else{
+                            console.warn("angularmodule property has incorrect format");
+                            return;
+                        }
+                    }
+                    else{
+                        console.warn("options is missing angular module property");
+                        return;
+                    }
+
+                    if(!angularoptions.bootstrapnode){
+                        console.warn("options is missing bootstrapnode property");
+                        return;
+                    }
+
+                    if( !( angularoptions.runblock && (typeof angularoptions.runblock === 'function' ||  typeof angularoptions.runblock === 'object') ) ){
+                        console.warn("options is missing runblock callback or has incorrect format");
+                        return;
+                    }
+
+                    if(!angularoptions.keycloakoptions){
+                        console.warn("options is missing keycloakoptions");
+                        return;
+                    }
+
+
+
+                    Ajkeycloak.instance.bootstrap(angularoptions.keycloakjson, angularoptions.keycloakoptions, function(keycloakinstance,keycloakuserInfo){
+
+                        angularmoduleinstance.constant("$ajkeycloak",keycloakinstance); // add keycloak instance as constant
+                        angularmoduleinstance.constant("KEYCLOAKINFO", keycloakuserInfo); // add keycloak user info as constant
+                        
+                        angularmoduleinstance.service('ajkeycloakservice',["$rootScope","KCuiPermissions",function($rootScope, KCuiPermissions){
+                            $rootScope.ajkeycloak = keycloakinstance;
+                            $rootScope.KCuiPermissions = KCuiPermissions;
+
+                            
+                                this.inValidApiAccess = false,
+                                this.instance = keycloakinstance,
+                                this.userInfo = keycloakuserInfo
+                            
+           
+                        }]);
+ 
+
+                        typeof bootstrapAngularCB === 'function' ? bootstrapAngularCB(keycloakinstance,keycloakuserInfo) : null;
+
+                        // add any additional helper services here
+                        if(angularoptions.helperservices){
+                            for(var servicename in angularoptions.helperservices){
+                                var servicecontainer = angularoptions.helperservices[servicename];
+                
+                                if(servicecontainer.service && (typeof servicecontainer.service === 'function' || servicecontainer.service === 'object') ){
+                                    var servicetype = servicecontainer.type;
+                                    if( servicetype === 'factory' ){
+                                        angularmoduleinstance.factory(servicename, servicecontainer.service);
+                                        console.log("factory", servicename , "added");
+                                    }
+                                    else if( servicetype === 'service' ){
+                                        angularmoduleinstance.service(servicename, servicecontainer.service);
+                                        console.log("service", servicename , "added");
+                                    }
+  
+                                }
+                            }
+                        }
+
+                        // add the http interceptor here
+                        if(angularoptions.interceptor && ( typeof angularoptions.interceptor === 'function' || typeof angularoptions.interceptor === 'object' )){
+                            angularmoduleinstance.factory('setKeycloakHeaders', angularoptions.interceptor);
+
+                            angularmoduleinstance.config(function($httpProvider){
+                                $httpProvider.interceptors.push('setKeycloakHeaders');
+                                console.log("keycloak interceptor injected");
+                              });
+                        }
+
+                        angular.bootstrap(angularoptions.bootstrapnode, [angularmodulename]);
+
+                        angularmoduleinstance.run(angularoptions.runblock);
+                    
+                    });
+                },
             protect: function(permissions, successcb, errorcb){
                 var deferred = Q.defer();
                 Ajkeycloak.instance.decoded_rpt = null;
