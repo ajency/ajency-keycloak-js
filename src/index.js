@@ -114,7 +114,7 @@
                         return;
                     }
 
-                    if(!angularoptions.runblock || typeof angularoptions.runblock !== 'function'){
+                    if(!angularoptions.runblock || typeof angularoptions.runblock !== 'function' ||  typeof angularoptions.runblock !== 'object'){
                         console.warn("options is missing runblock callback or has incorrect format");
                         return;
                     }
@@ -131,7 +131,7 @@
                         angularmoduleinstance.constant("$ajkeycloak",keycloakinstance); // add keycloak instance as constant
                         angularmoduleinstance.constant("KEYCLOAKINFO", keycloakuserInfo); // add keycloak user info as constant
                         
-                        angularmoduleinstance.service('ajkeycloakservice',function($rootScope, KCuiPermissions){
+                        angularmoduleinstance.service('ajkeycloakservice',["$rootScope","KCuiPermissions",function($rootScope, KCuiPermissions){
                             $rootScope.ajkeycloak = keycloakinstance;
                             $rootScope.KCuiPermissions = KCuiPermissions;
 
@@ -141,7 +141,7 @@
                                 this.userInfo = keycloakuserInfo
                             
            
-                        });
+                        }]);
  
 
                         typeof bootstrapAngularCB === 'function' ? bootstrapAngularCB(keycloakinstance,keycloakuserInfo) : null;
@@ -151,7 +151,7 @@
                             for(var servicename in angularoptions.helperservices){
                                 var servicecontainer = angularoptions.helperservices[servicename];
                 
-                                if(servicecontainer.service && typeof servicecontainer.service === 'function'){
+                                if(servicecontainer.service && (typeof servicecontainer.service === 'function' || servicecontainer.service === 'object') ){
                                     var servicetype = servicecontainer.type;
                                     if( servicetype === 'factory' ){
                                         angularmoduleinstance.factory(servicename, servicecontainer.service);
@@ -167,7 +167,7 @@
                         }
 
                         // add the http interceptor here
-                        if(angularoptions.interceptor && typeof angularoptions.interceptor === 'function'){
+                        if(angularoptions.interceptor && ( typeof angularoptions.interceptor === 'function' || typeof angularoptions.interceptor === 'object' )){
                             angularmoduleinstance.factory('setKeycloakHeaders', angularoptions.interceptor);
 
                             angularmoduleinstance.config(function($httpProvider){
