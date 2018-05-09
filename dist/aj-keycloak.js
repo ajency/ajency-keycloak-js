@@ -3689,7 +3689,7 @@ return Q;
                             var url = Ajkeycloak.instance.CONFIG['url'] + '/realms/' + Ajkeycloak.instance.CONFIG['realm'] + '/authz/entitlement/' + Ajkeycloak.instance.CONFIG['clientId'];
                             Ajkeycloak.instance.makeRequest(
                                     url, 
-                                    'POST',
+                                    permissions[0] === 'all' ? 'GET' : 'POST',
                                     entitlements,
                                     {
                                         'Content-Type': 'application/json',
@@ -3830,6 +3830,75 @@ return Q;
                     }
                     else{
                         // console.warn("no permissions in rpt");
+                        return false;
+                    }
+                }
+                else{
+                    return Ajkeycloak.instance.keycloak.authenticated;
+                }
+            },
+            hasSingleAccess: function(permissions, allpermissions){ //synchronous no promise required
+  
+                if(permissions && permissions.length){
+                    if(allpermissions && allpermissions.authorization && allpermissions.authorization.permissions && allpermissions.authorization.permissions.length){
+                        // check for permissions here
+                        var rpt_permissions = allpermissions.authorization.permissions;
+    
+                        var permission_status = true;
+                        var matcharray = rpt_permissions.some(function(rpt_perm){
+                            var req_perm = permissions.find(function(perm){
+                                return perm.resource_set_name === rpt_perm.resource_set_name;
+                            });
+    
+                            if(req_perm){
+    
+                                if(req_perm.scopes && rpt_perm.scopes){
+                                    var scopematch = true;
+                                    req_perm.scopes.map(function(reqscope){
+                                        var found = rpt_perm.scopes.some(function(resscope){
+                                            return reqscope === resscope;
+                                        });
+    
+                                        if(!found)
+                                            scopematch = false;
+    
+                                    });
+            
+                                    if(!scopematch){
+                                        console.warn("missing scope match for ", rpt_perm.resource_set_name);
+                                        permission_status = scopematch;
+                                        return permission_status;
+                                    }
+    
+                                }
+                                else{
+                                    if(!req_perm.scopes && !rpt_perm.scopes){
+                                        console.warn("no scopes present");
+                                        permission_status = true;
+                                        return permission_status;
+                                    }
+                                    else{
+                                        console.warn("scopes mismatch");
+                                        permission_status = false;
+                                        return permission_status;
+                                    }
+    
+                                }
+            
+                            }
+                            else{
+                                console.warn(rpt_perm.resource_set_name + " not present");
+                                permission_status = false;
+                                return permission_status;
+                            }
+                        }); // end rpt_permissions map 
+                        
+                        console.log("matcharray", matcharray)
+                        console.log("permissions status: ", permission_status);
+                        return permission_status;
+                    }
+                    else{
+                        console.warn("no permissions in rpt");
                         return false;
                     }
                 }
