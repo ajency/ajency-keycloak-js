@@ -46,6 +46,27 @@
                     Ajkeycloak.instance.makeRequest(jsonpath)
                     .then( function(keycloakjson) {
                         //do stuff with your data here
+                        var redirecturl = window.location.pathname.length > 1 ? window.location.pathname : window.location.hash;
+                        var hashlocationstrategy = redirecturl.indexOf('#') === 0 ? true : false;
+                        
+                        if(hashlocationstrategy && redirecturl.length > 2 || !hashlocationstrategy && redirecturl.length > 1){
+
+                            if(hashlocationstrategy){
+                                Ajkeycloak.instance.redirectUrl = redirecturl.indexOf("/") === 1 ? redirecturl : '';
+                            }
+                            else{
+                                Ajkeycloak.instance.redirectUrl = redirecturl;
+                            }
+    
+                            if(Ajkeycloak.instance.redirectUrl){
+                                if (window.localStorage) {
+                                    localStorage.setItem('ajredirecturl',Ajkeycloak.instance.redirectUrl);
+                                }
+                            }
+    
+                        }
+
+
                         Ajkeycloak.instance.initialise(JSON.parse(keycloakjson));
 
                         var ajkeycloak = Ajkeycloak.instance;
@@ -56,6 +77,13 @@
                                             // console.log("userinfo", userInfo);
                 
                                                 if(typeof bootstrapAngularCB === 'function'){
+                                                    if(window.localStorage){
+                                                        ajkeycloak.redirectUrl = localStorage.getItem('ajredirecturl');
+                                                    }
+                                                    else{
+                                                        console.warn("browser doesnt support local storage! redirects wont work");
+                                                    }
+                                                    console.log("saved redirecturl", ajkeycloak.redirectUrl);
                                                     bootstrapAngularCB(ajkeycloak,userInfo);
                                                 }
                                                 else{
@@ -179,6 +207,8 @@
                         angular.bootstrap(angularoptions.bootstrapnode, [angularmodulename]);
 
                         angularmoduleinstance.run(angularoptions.runblock);
+
+                        // angularmoduleinstance.constant(localStorage.getItem('ajredirecturl'));
                     
                     });
                 },
@@ -411,6 +441,10 @@
                 else{
                     return Ajkeycloak.instance.keycloak.authenticated;
                 }
+            },
+            clearRedirectUrl: function(){
+                Ajkeycloak.instance.redirectUrl = null;
+                localStorage.removeItem('ajredirecturl');
             }
 
         }
