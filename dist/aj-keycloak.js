@@ -3523,7 +3523,7 @@ return Q;
 
         function _update_rpt_permissions(req_permissions){
             var decoded_rpt_permissions = Ajkeycloak.instance.decoded_rpt && Ajkeycloak.instance.decoded_rpt.authorization && Ajkeycloak.instance.decoded_rpt.authorization.permissions ? Ajkeycloak.instance.decoded_rpt.authorization.permissions : null;
-            if(req_permissions[0] === 'all'){
+            if(req_permissions === 'all'){
                 Ajkeycloak.instance.rpt_permissions = decoded_rpt_permissions;
             }
             else{
@@ -3552,6 +3552,7 @@ return Q;
 
             }
 
+            console.log("Ajkeycloak.instance.rpt_permissions",JSON.parse(JSON.stringify(Ajkeycloak.instance.rpt_permissions)))
         }
 
         return {
@@ -3564,8 +3565,10 @@ return Q;
                         if(config["resource"])
                             config["clientId"] = config["resource"];
             
-                        Ajkeycloak.instance.CONFIG = config;
-                        Ajkeycloak.instance.keycloak = Keycloak(config);
+                        this.CONFIG = config;
+                        this.keycloak = Keycloak(config);
+                        this.decoded_rpt = {};
+                        this.rpt_permissions = [];
                     }
                 },
             bootstrap: function(jsonpath,keycloakoptions,bootstrapAngularCB){
@@ -3694,8 +3697,7 @@ return Q;
                                 this.inValidApiAccess = false,
                                 this.instance = keycloakinstance,
                                 this.userInfo = keycloakuserInfo
-                            
-           
+
                         }]);
  
 
@@ -3739,60 +3741,73 @@ return Q;
                     
                     });
                 },
-            protect: function(permissions, successcb, errorcb){
-                var deferred = Q.defer();
-                Ajkeycloak.instance.decoded_rpt = null;
-                if(permissions && permissions.length){  // code for entitlements check
-                    var entitlements = { 
-                        "permissions" : permissions
-                    }
-        
-                    try{
-                        Ajkeycloak.instance.keycloak.updateToken(5).success(function(refreshed){
-                            var url = Ajkeycloak.instance.CONFIG['url'] + '/realms/' + Ajkeycloak.instance.CONFIG['realm'] + '/authz/entitlement/' + Ajkeycloak.instance.CONFIG['clientId'];
-                            Ajkeycloak.instance.makeRequest(
-                                    url, 
-                                    permissions[0] === 'all' ? 'GET' : 'POST',
-                                    entitlements,
-                                    {
-                                        'Content-Type': 'application/json',
-                                        'Authorization': 'Bearer ' + Ajkeycloak.instance.keycloak.token
-                                    }
-                                )
-                                .then(function(res){
-                                    var json = JSON.parse(res);
-                                    if(json.rpt){
-                                        Ajkeycloak.instance.decoded_rpt = Ajkeycloak.instance.jwtDecode(json.rpt);
+            protect: function(permissions, forcecheck, successcb, errorcb){
+                    var deferred = Q.defer();
 
-                                        _update_rpt_permissions(permissions);
-                                        
-                                        _success_action( Ajkeycloak.instance.decoded_rpt, deferred, successcb );
-                                    }
-                                    else{
-                                        _success_action(json, deferred, successcb);
-                                    }
-                                })
-                                .catch(function(err){
+                    if(Ajkeycloak.instance.rpt_permissions.length === 0 || forcecheck){
+                        console.log("protect method performing force check")
+                        if(permissions && permissions.length){  // code for entitlements check
+                            var entitlements = { 
+                                "permissions" : permissions
+                            }
+                
+                            try{
+                                Ajkeycloak.instance.keycloak.updateToken(5).success(function(refreshed){
+                                    Ajkeycloak.instance.decoded_rpt = {};
+                                    var url = Ajkeycloak.instance.CONFIG['url'] + '/realms/' + Ajkeycloak.instance.CONFIG['realm'] + '/authz/entitlement/' + Ajkeycloak.instance.CONFIG['clientId'];
+                                    Ajkeycloak.instance.makeRequest(
+                                            url, 
+                                            permissions === 'all' ? 'GET' : 'POST',
+                                            entitlements,
+                                            {
+                                                'Content-Type': 'application/json',
+                                                'Authorization': 'Bearer ' + Ajkeycloak.instance.keycloak.token
+                                            }
+                                        )
+                                        .then(function(res){
+                                            var json = JSON.parse(res);
+                                            if(json.rpt){
+                                                Ajkeycloak.instance.decoded_rpt = Ajkeycloak.instance.jwtDecode(json.rpt);
+                                                _update_rpt_permissions(permissions);
+                                                _success_action( Ajkeycloak.instance.decoded_rpt, deferred, successcb );
+                                            }
+                                            else{
+                                                _success_action(json, deferred, successcb);
+                                            }
+                                        })
+                                        .catch(function(err){
+                                            _failure_action(err, deferred, errorcb);
+                                        });    
+                                  })
+                                  .error(function(err){
                                     _failure_action(err, deferred, errorcb);
-                                });    
-                          })
-                          .error(function(err){
-                            _failure_action(err, deferred, errorcb);
-                          });
+                                  });
+                            }
+                            catch(e){
+                                _failure_action(e, deferred, errorcb);
+                            }
+                
+                            }
+                            else{  // default authorization
+                                if(Ajkeycloak.instance.keycloak.authenticated){
+                                    _success_action({}, deferred, successcb);
+                                }
+                                else{
+                                    _failure_action({}, deferred, errorcb);
+                                }
+                            }
                     }
-                    catch(e){
-                        _failure_action(e, deferred, errorcb);
-                    }
-        
-                    }
-                    else{  // default authorization
-                        if(Ajkeycloak.instance.keycloak.authenticated){
-                            _success_action({}, deferred, successcb);
+                    else{
+                        console.log("protect method performing hasAccess check")
+                        if(Ajkeycloak.instance.hasAccess(typeof permissions === 'object' ? permissions : [])){
+                            deferred.resolve(permissions);
                         }
                         else{
-                            _failure_action({}, deferred, errorcb);
+                            deferred.reject(false);
                         }
+ 
                     }
+
         
                     return deferred.promise;
         
@@ -3838,7 +3853,7 @@ return Q;
                 },
             hasAccess: function(permissions){ //synchronous no promise required
                 var rpt_permissions = Ajkeycloak.instance.rpt_permissions;
-                console.log("decoded rpt:",rpt_permissions || null);
+                // console.log("decoded rpt:",rpt_permissions || null);
                 if(permissions && permissions.length){
                     if(rpt_permissions && rpt_permissions.length){
                         // check for permissions here
@@ -3862,17 +3877,14 @@ return Q;
     
                                     });
             
-                                    if(!scopematch){
-                                        // console.warn("missing scope match for ", rpt_perm.resource_set_name);
-                                        permission_status = scopematch;
-                                        return permission_status;
-                                    }
-    
+                                    permission_status = scopematch;
+                                    return permission_status;
                                 }
                                 else{
                                     if(!req_perm.scopes && !rpt_perm.scopes){
                                         // console.warn("no scopes present");
-                                        return true;
+                                        permission_status = true;
+                                        return permission_status;
                                     }
                                     else{
                                         // console.warn("scopes mismatch");
@@ -3902,75 +3914,6 @@ return Q;
                     return Ajkeycloak.instance.keycloak.authenticated;
                 }
             },
-            // hasSingleAccess: function(permissions, allpermissions){ //synchronous no promise required
-  
-            //     if(permissions && permissions.length){
-            //         if(allpermissions && allpermissions.authorization && allpermissions.authorization.permissions && allpermissions.authorization.permissions.length){
-            //             // check for permissions here
-            //             var rpt_permissions = allpermissions.authorization.permissions;
-    
-            //             var permission_status = true;
-            //             var matcharray = rpt_permissions.some(function(rpt_perm){
-            //                 var req_perm = permissions.find(function(perm){
-            //                     return perm.resource_set_name === rpt_perm.resource_set_name;
-            //                 });
-    
-            //                 if(req_perm){
-    
-            //                     if(req_perm.scopes && rpt_perm.scopes){
-            //                         var scopematch = true;
-            //                         req_perm.scopes.map(function(reqscope){
-            //                             var found = rpt_perm.scopes.some(function(resscope){
-            //                                 return reqscope === resscope;
-            //                             });
-    
-            //                             if(!found)
-            //                                 scopematch = false;
-    
-            //                         });
-            
-            //                         if(!scopematch){
-            //                             console.warn("missing scope match for ", rpt_perm.resource_set_name);
-            //                             permission_status = scopematch;
-            //                             return permission_status;
-            //                         }
-    
-            //                     }
-            //                     else{
-            //                         if(!req_perm.scopes && !rpt_perm.scopes){
-            //                             console.warn("no scopes present");
-            //                             permission_status = true;
-            //                             return permission_status;
-            //                         }
-            //                         else{
-            //                             console.warn("scopes mismatch");
-            //                             permission_status = false;
-            //                             return permission_status;
-            //                         }
-    
-            //                     }
-            
-            //                 }
-            //                 else{
-            //                     console.warn(rpt_perm.resource_set_name + " not present");
-            //                     permission_status = false;
-            //                     return permission_status;
-            //                 }
-            //             }); // end rpt_permissions map 
-                        
-            //             console.log("matcharray", matcharray)
-            //             console.log("permissions status: ", permission_status);
-            //             return permission_status;
-            //         }
-            //         else{
-            //             console.warn("no permissions in rpt");
-            //             return false;
-            //         }
-            //     }
-            //     else{
-            //         return Ajkeycloak.instance.keycloak.authenticated;
-            //     }
-            // },
             clearRedirectUrl: function(){
                 Ajkeycloak.instance.redirectUrl = null;
                 localStorage.removeItem('ajredirecturl');
