@@ -27,6 +27,22 @@
             deferred.reject(error);
         }
 
+        function get_client_role(resource_access){
+
+            if(Ajkeycloak.instance.CONFIG.resource){
+                var clientroles = null;
+                for(var index in resource_access){
+                    if(index === Ajkeycloak.instance.CONFIG.resource){
+                        clientroles = resource_access[index];
+                    }
+                }
+                return clientroles ? clientroles.roles ? clientroles.roles: clientroles : null;
+            }
+            else{
+                return resource_access;
+            }
+        }
+
         return {
             constructor: Ajkeycloak,
             initialise: function(config){
@@ -374,8 +390,143 @@
             clearRedirectUrl: function(){
                 Ajkeycloak.instance.redirectUrl = null;
                 localStorage.removeItem('ajredirecturl');
+            },
+            getUserRoles: function(){
+                try{
+                    if(Ajkeycloak.instance.keycloak.token){
+                        var userinfo = Ajkeycloak.instance.jwtDecode(Ajkeycloak.instance.keycloak.token);
+                        if(userinfo.resource_access){
+                            return get_client_role(JSON.parse(JSON.stringify(userinfo.resource_access)));
+                        }
+                        else{
+                            return null;
+                        }
+    
+                    }
+                    else{
+                        return null;
+                    }
+                }
+                catch(e){
+                    return null;
+                }
+            },
+            userBelongsToRoles: function(req_roles){
+                try{
+                    if(req_roles){
+                        var roles = Ajkeycloak.instance.getUserRoles();
+            
+                        if(roles){
+                            if(typeof req_roles === 'string'){
+                                var present = roles.some(function(role){
+                                    return role === req_roles;
+                                });
+            
+                                return present;
+                            }
+                            else if(typeof req_roles === 'object' && req_roles.length){
+                                var roleresponse = {};
+            
+                                req_roles.map(function(req_role){
+                                    var rolefound = roles.find(function(role){
+                                        return role === req_role;
+                                    });
+            
+                                    if(rolefound){
+                                        roleresponse[req_role] = true;
+                                    }
+                                    else{
+                                        roleresponse[req_role] = false;
+                                    }
+                                });
+            
+                                return roleresponse;
+                            }
+                            else{
+                                return null;
+                            }
+                        }
+                        else{
+                            return null;
+                        }
+            
+                    }
+                    else{
+                        return null;
+                    }
+                }
+                catch(e){
+                    return null;
+                }
+        
+            },
+            getUserGroupMembership: function(){
+                try{
+                    if(Ajkeycloak.instance.keycloak.token){
+                        var userinfo = Ajkeycloak.instance.jwtDecode(Ajkeycloak.instance.keycloak.token);
+                        if(userinfo["group-membership"]){
+                            return JSON.parse(JSON.stringify(userinfo["group-membership"]));
+                        }
+                        else{
+                            return null;
+                        }
+                    }
+                    else{
+                        return null;
+                    }
+                }
+                catch(e){
+                    return null;
+                }
+            },
+            userBelongsToGroups: function(req_groups){
+                try{
+                    if(req_groups){
+                        var groups =  Ajkeycloak.instance.getUserGroupMembership();
+            
+                        if(groups){
+                            if(typeof req_groups === 'string'){
+                                var present = groups.some(function(group){
+                                    return group === req_groups;
+                                });
+            
+                                return present;
+                            }
+                            else if(typeof req_groups === 'object' && req_groups.length){
+                                var group_present = {};
+            
+                                req_groups.map(function(req_group){
+                                    var groupfound = groups.find(function(group){
+                                        return group === req_group;
+                                    });
+            
+                                    if(groupfound){
+                                        group_present[req_group] = true;
+                                    }
+                                    else{
+                                        group_present[req_group] = false;
+                                    }
+                                });
+            
+                                return group_present;
+                            }
+                            else{
+                                return null;
+                            }
+                        }
+                        else{
+                            return null;
+                        }
+                    }
+                    else{
+                        return null;
+                    }
+                }
+                catch(e){
+                    return null;
+                }
+        
             }
-
         }
     })()
 
