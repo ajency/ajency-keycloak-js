@@ -27,6 +27,22 @@
             deferred.reject(error);
         }
 
+        function get_client_role(resource_access){
+
+            if(Ajkeycloak.instance.CONFIG.resource){
+                var clientroles = null;
+                for(var index in resource_access){
+                    if(index === Ajkeycloak.instance.CONFIG.resource){
+                        clientroles = resource_access[index];
+                    }
+                }
+                return clientroles ? clientroles.roles ? clientroles.roles: clientroles : null;
+            }
+            else{
+                return resource_access;
+            }
+        }
+
         return {
             constructor: Ajkeycloak,
             initialise: function(config){
@@ -314,7 +330,7 @@
                         var rpt_permissions = decoded_rpt.authorization.permissions;
     
                         var permission_status = true;
-                        rpt_permissions.map(function(rpt_perm){
+                        rpt_permissions.some(function(rpt_perm){
                             var req_perm = permissions.find(function(perm){
                                 return perm.resource_set_name === rpt_perm.resource_set_name;
                             });
@@ -333,16 +349,14 @@
     
                                     });
             
-                                    if(!scopematch){
-                                        // console.warn("missing scope match for ", rpt_perm.resource_set_name);
-                                        permission_status = scopematch;
-                                        return permission_status;
-                                    }
+                                    permission_status = scopematch;
+                                    return permission_status;
     
                                 }
                                 else{
                                     if(!req_perm.scopes && !rpt_perm.scopes){
                                         // console.warn("no scopes present");
+                                        permission_status = true;
                                         return true;
                                     }
                                     else{
@@ -373,80 +387,146 @@
                     return Ajkeycloak.instance.keycloak.authenticated;
                 }
             },
-            hasSingleAccess: function(permissions, allpermissions){ //synchronous no promise required
-  
-                if(permissions && permissions.length){
-                    if(allpermissions && allpermissions.authorization && allpermissions.authorization.permissions && allpermissions.authorization.permissions.length){
-                        // check for permissions here
-                        var rpt_permissions = allpermissions.authorization.permissions;
-    
-                        var permission_status = true;
-                        var matcharray = rpt_permissions.some(function(rpt_perm){
-                            var req_perm = permissions.find(function(perm){
-                                return perm.resource_set_name === rpt_perm.resource_set_name;
-                            });
-    
-                            if(req_perm){
-    
-                                if(req_perm.scopes && rpt_perm.scopes){
-                                    var scopematch = true;
-                                    req_perm.scopes.map(function(reqscope){
-                                        var found = rpt_perm.scopes.some(function(resscope){
-                                            return reqscope === resscope;
-                                        });
-    
-                                        if(!found)
-                                            scopematch = false;
-    
-                                    });
-            
-                                    if(!scopematch){
-                                        console.warn("missing scope match for ", rpt_perm.resource_set_name);
-                                        permission_status = scopematch;
-                                        return permission_status;
-                                    }
-    
-                                }
-                                else{
-                                    if(!req_perm.scopes && !rpt_perm.scopes){
-                                        console.warn("no scopes present");
-                                        permission_status = true;
-                                        return permission_status;
-                                    }
-                                    else{
-                                        console.warn("scopes mismatch");
-                                        permission_status = false;
-                                        return permission_status;
-                                    }
-    
-                                }
-            
-                            }
-                            else{
-                                console.warn(rpt_perm.resource_set_name + " not present");
-                                permission_status = false;
-                                return permission_status;
-                            }
-                        }); // end rpt_permissions map 
-                        
-                        console.log("matcharray", matcharray)
-                        console.log("permissions status: ", permission_status);
-                        return permission_status;
-                    }
-                    else{
-                        console.warn("no permissions in rpt");
-                        return false;
-                    }
-                }
-                else{
-                    return Ajkeycloak.instance.keycloak.authenticated;
-                }
-            },
             clearRedirectUrl: function(){
                 Ajkeycloak.instance.redirectUrl = null;
                 localStorage.removeItem('ajredirecturl');
+            },
+            getUserRoles: function(){
+                try{
+                    if(Ajkeycloak.instance.keycloak.token){
+                        var userinfo = Ajkeycloak.instance.jwtDecode(Ajkeycloak.instance.keycloak.token);
+                        if(userinfo.resource_access){
+                            return get_client_role(JSON.parse(JSON.stringify(userinfo.resource_access)));
+                        }
+                        else{
+                            return null;
+                        }
+    
+                    }
+                    else{
+                        return null;
+                    }
+                }
+                catch(e){
+                    return null;
+                }
+            },
+            userBelongsToRoles: function(req_roles){
+                try{
+                    if(req_roles){
+                        var roles = Ajkeycloak.instance.getUserRoles();
+            
+                        if(roles){
+                            if(typeof req_roles === 'string'){
+                                var present = roles.some(function(role){
+                                    return role === req_roles;
+                                });
+            
+                                return present;
+                            }
+                            else if(typeof req_roles === 'object' && req_roles.length){
+                                var roleresponse = {};
+            
+                                req_roles.map(function(req_role){
+                                    var rolefound = roles.find(function(role){
+                                        return role === req_role;
+                                    });
+            
+                                    if(rolefound){
+                                        roleresponse[req_role] = true;
+                                    }
+                                    else{
+                                        roleresponse[req_role] = false;
+                                    }
+                                });
+            
+                                return roleresponse;
+                            }
+                            else{
+                                return null;
+                            }
+                        }
+                        else{
+                            return null;
+                        }
+            
+                    }
+                    else{
+                        return null;
+                    }
+                }
+                catch(e){
+                    return null;
+                }
+        
+            },
+            getUserGroupMembership: function(){
+                try{
+                    if(Ajkeycloak.instance.keycloak.token){
+                        var userinfo = Ajkeycloak.instance.jwtDecode(Ajkeycloak.instance.keycloak.token);
+                        if(userinfo["group-membership"]){
+                            return JSON.parse(JSON.stringify(userinfo["group-membership"]));
+                        }
+                        else{
+                            return null;
+                        }
+                    }
+                    else{
+                        return null;
+                    }
+                }
+                catch(e){
+                    return null;
+                }
+            },
+            userBelongsToGroups: function(req_groups){
+                try{
+                    if(req_groups){
+                        var groups =  Ajkeycloak.instance.getUserGroupMembership();
+            
+                        if(groups){
+                            if(typeof req_groups === 'string'){
+                                var present = groups.some(function(group){
+                                    return group === req_groups;
+                                });
+            
+                                return present;
+                            }
+                            else if(typeof req_groups === 'object' && req_groups.length){
+                                var group_present = {};
+            
+                                req_groups.map(function(req_group){
+                                    var groupfound = groups.find(function(group){
+                                        return group === req_group;
+                                    });
+            
+                                    if(groupfound){
+                                        group_present[req_group] = true;
+                                    }
+                                    else{
+                                        group_present[req_group] = false;
+                                    }
+                                });
+            
+                                return group_present;
+                            }
+                            else{
+                                return null;
+                            }
+                        }
+                        else{
+                            return null;
+                        }
+                    }
+                    else{
+                        return null;
+                    }
+                }
+                catch(e){
+                    return null;
+                }
+        
             }
-
         }
     })()
 
