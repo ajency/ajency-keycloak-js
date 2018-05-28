@@ -3596,7 +3596,7 @@ return Q;
                                         .success(function () {
                                         ajkeycloak.keycloak.loadUserInfo().success(function (userInfo) {
                                             // console.log("userinfo", userInfo);
-                
+                                                ajkeycloak.userInfo = userInfo;
                                                 if(typeof bootstrapAngularCB === 'function'){
                                                     if(window.localStorage){
                                                         ajkeycloak.redirectUrl = localStorage.getItem('ajredirecturl');
@@ -3605,6 +3605,8 @@ return Q;
                                                         console.warn("browser doesnt support local storage! redirects wont work");
                                                     }
                                                     console.log("saved redirecturl", ajkeycloak.redirectUrl);
+                    
+
                                                     bootstrapAngularCB(ajkeycloak,userInfo);
                                                 }
                                                 else{
@@ -3679,15 +3681,12 @@ return Q;
 
                         angularmoduleinstance.constant("$ajkeycloak",keycloakinstance); // add keycloak instance as constant
                         
-                        angularmoduleinstance.service('$ajkeycloakservice',["$rootScope","KCuiPermissions",function($rootScope, KCuiPermissions){
+                        angularmoduleinstance.factory('$ajkeycloakservice',["$rootScope","KCuiPermissions",function($rootScope, KCuiPermissions){
                             $rootScope.ajkeycloak = keycloakinstance;
                             $rootScope.KCuiPermissions = KCuiPermissions;
 
-                            
-                                this.inValidApiAccess = false,
-                                this.instance = keycloakinstance,
-                                this.userInfo = keycloakuserInfo
-                            
+                            keycloakinstance.inValidApiAccess = false;
+                            return keycloakinstance;
            
                         }]);
  
