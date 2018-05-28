@@ -43,6 +43,17 @@
             }
         }
 
+        function membership_path_check(group_to_check, group_string){
+            var group_match_string = null;
+            var group_paths = group_string.split('/');
+            if(group_paths.length){
+                var lastindex = group_paths.length - 1
+                group_paths.length - 1
+                group_match_string = group_paths[lastindex].indexOf(group_to_check) === 0 ? group_paths[lastindex]: null;
+            }
+            return group_match_string;
+        }
+
         return {
             constructor: Ajkeycloak,
             initialise: function(config){
@@ -485,25 +496,31 @@
             
                         if(groups){
                             if(typeof req_groups === 'string'){
-                                var present = groups.some(function(group){
-                                    return group === req_groups;
+                                var matches = [];
+                                var present = groups.map(function(group){
+                                    var match_string = membership_path_check(req_groups, group);
+                                    if(match_string){
+                                        matches.push(match_string);
+                                    }
+                                    return match_string ? true : false;
                                 });
             
-                                return present;
+                                return matches;
                             }
                             else if(typeof req_groups === 'object' && req_groups.length){
                                 var group_present = {};
             
                                 req_groups.map(function(req_group){
-                                    var groupfound = groups.find(function(group){
-                                        return group === req_group;
+                                    var groupsfound = groups.filter(function(group){
+                                        var match_string = membership_path_check(req_group, group);
+                                        return match_string ? true : false;
                                     });
             
-                                    if(groupfound){
-                                        group_present[req_group] = true;
+                                    if(groupsfound){
+                                        group_present[req_group] = groupsfound;
                                     }
                                     else{
-                                        group_present[req_group] = false;
+                                        group_present[req_group] = [];
                                     }
                                 });
             
