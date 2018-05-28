@@ -3667,9 +3667,8 @@ return Q;
                     Ajkeycloak.instance.bootstrap(angularoptions.keycloakjson, angularoptions.keycloakoptions, function(keycloakinstance,keycloakuserInfo){
 
                         angularmoduleinstance.constant("$ajkeycloak",keycloakinstance); // add keycloak instance as constant
-                        angularmoduleinstance.constant("KEYCLOAKINFO", keycloakuserInfo); // add keycloak user info as constant
                         
-                        angularmoduleinstance.service('ajkeycloakservice',["$rootScope","KCuiPermissions",function($rootScope, KCuiPermissions){
+                        angularmoduleinstance.service('$ajkeycloakservice',["$rootScope","KCuiPermissions",function($rootScope, KCuiPermissions){
                             $rootScope.ajkeycloak = keycloakinstance;
                             $rootScope.KCuiPermissions = KCuiPermissions;
 
