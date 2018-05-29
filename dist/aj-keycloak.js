@@ -3542,7 +3542,6 @@ return Q;
             var group_paths = group_string.split('/');
             if(group_paths.length){
                 var lastindex = group_paths.length - 1
-                group_paths.length - 1
                 group_match_string = group_paths[lastindex].indexOf(group_to_check) === 0 ? group_paths[lastindex]: null;
             }
             return group_match_string;
@@ -3856,18 +3855,17 @@ return Q;
                                     return permission_status;
     
                                 }
-                                else{
-                                    if(!req_perm.scopes && !rpt_perm.scopes){
-                                        // console.warn("no scopes present");
-                                        permission_status = true;
-                                        return true;
-                                    }
-                                    else{
-                                        // console.warn("scopes mismatch");
-                                        permission_status = false;
-                                        return permission_status;
-                                    }
-    
+                                else if(!req_perm.scopes && !rpt_perm.scopes){
+                                    permission_status = true;
+                                    return permission_status;
+                                }
+                                else if(!req_perm.scopes && rpt_perm.scopes){
+                                    permission_status = true;
+                                    return permission_status;
+                                }
+                                else if(req_perm.scopes && !rpt_perm.scopes){
+                                    permission_status = false;
+                                    return permission_status;
                                 }
             
                             }
