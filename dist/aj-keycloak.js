@@ -3554,6 +3554,32 @@ return Q;
 
             console.log("Ajkeycloak.instance.rpt_permissions",JSON.parse(JSON.stringify(Ajkeycloak.instance.rpt_permissions)))
         }
+        
+        function get_client_role(resource_access){
+
+            if(Ajkeycloak.instance.CONFIG.resource){
+                var clientroles = null;
+                for(var index in resource_access){
+                    if(index === Ajkeycloak.instance.CONFIG.resource){
+                        clientroles = resource_access[index];
+                    }
+                }
+                return clientroles ? clientroles.roles ? clientroles.roles: clientroles : null;
+            }
+            else{
+                return resource_access;
+            }
+        }
+
+        function membership_path_check(group_to_check, group_string){
+            var group_match_string = null;
+            var group_paths = group_string.split('/');
+            if(group_paths.length){
+                var lastindex = group_paths.length - 1
+                group_match_string = group_paths[lastindex].indexOf(group_to_check) === 0 ? group_paths[lastindex]: null;
+            }
+            return group_match_string;
+        }
 
         return {
             constructor: Ajkeycloak,
@@ -3605,7 +3631,7 @@ return Q;
                                         .success(function () {
                                         ajkeycloak.keycloak.loadUserInfo().success(function (userInfo) {
                                             // console.log("userinfo", userInfo);
-                
+                                                ajkeycloak.userInfo = userInfo;
                                                 if(typeof bootstrapAngularCB === 'function'){
                                                     if(window.localStorage){
                                                         ajkeycloak.redirectUrl = localStorage.getItem('ajredirecturl');
@@ -3614,6 +3640,8 @@ return Q;
                                                         console.warn("browser doesnt support local storage! redirects wont work");
                                                     }
                                                     console.log("saved redirecturl", ajkeycloak.redirectUrl);
+                    
+
                                                     bootstrapAngularCB(ajkeycloak,userInfo);
                                                 }
                                                 else{
@@ -3687,17 +3715,14 @@ return Q;
                     Ajkeycloak.instance.bootstrap(angularoptions.keycloakjson, angularoptions.keycloakoptions, function(keycloakinstance,keycloakuserInfo){
 
                         angularmoduleinstance.constant("$ajkeycloak",keycloakinstance); // add keycloak instance as constant
-                        angularmoduleinstance.constant("KEYCLOAKINFO", keycloakuserInfo); // add keycloak user info as constant
                         
-                        angularmoduleinstance.service('ajkeycloakservice',["$rootScope","KCuiPermissions",function($rootScope, KCuiPermissions){
+                        angularmoduleinstance.factory('$ajkeycloakservice',["$rootScope","KCuiPermissions",function($rootScope, KCuiPermissions){
                             $rootScope.ajkeycloak = keycloakinstance;
                             $rootScope.KCuiPermissions = KCuiPermissions;
 
-                            
-                                this.inValidApiAccess = false,
-                                this.instance = keycloakinstance,
-                                this.userInfo = keycloakuserInfo
-
+                            keycloakinstance.inValidApiAccess = false;
+                            return keycloakinstance;
+           
                         }]);
  
 
@@ -3879,19 +3904,19 @@ return Q;
             
                                     permission_status = scopematch;
                                     return permission_status;
-                                }
-                                else{
-                                    if(!req_perm.scopes && !rpt_perm.scopes){
-                                        // console.warn("no scopes present");
-                                        permission_status = true;
-                                        return permission_status;
-                                    }
-                                    else{
-                                        // console.warn("scopes mismatch");
-                                        permission_status = false;
-                                        return permission_status;
-                                    }
     
+                                }
+                                else if(!req_perm.scopes && !rpt_perm.scopes){
+                                    permission_status = true;
+                                    return permission_status;
+                                }
+                                else if(!req_perm.scopes && rpt_perm.scopes){
+                                    permission_status = true;
+                                    return permission_status;
+                                }
+                                else if(req_perm.scopes && !rpt_perm.scopes){
+                                    permission_status = false;
+                                    return permission_status;
                                 }
             
                             }
@@ -3917,8 +3942,149 @@ return Q;
             clearRedirectUrl: function(){
                 Ajkeycloak.instance.redirectUrl = null;
                 localStorage.removeItem('ajredirecturl');
+            },
+            getUserRoles: function(){
+                try{
+                    if(Ajkeycloak.instance.keycloak.token){
+                        var userinfo = Ajkeycloak.instance.jwtDecode(Ajkeycloak.instance.keycloak.token);
+                        if(userinfo.resource_access){
+                            return get_client_role(JSON.parse(JSON.stringify(userinfo.resource_access)));
+                        }
+                        else{
+                            return null;
+                        }
+    
+                    }
+                    else{
+                        return null;
+                    }
+                }
+                catch(e){
+                    return null;
+                }
+            },
+            userBelongsToRoles: function(req_roles){
+                try{
+                    if(req_roles){
+                        var roles = Ajkeycloak.instance.getUserRoles();
+            
+                        if(roles){
+                            if(typeof req_roles === 'string'){
+                                var present = roles.some(function(role){
+                                    return role === req_roles;
+                                });
+            
+                                return present;
+                            }
+                            else if(typeof req_roles === 'object' && req_roles.length){
+                                var roleresponse = {};
+            
+                                req_roles.map(function(req_role){
+                                    var rolefound = roles.find(function(role){
+                                        return role === req_role;
+                                    });
+            
+                                    if(rolefound){
+                                        roleresponse[req_role] = true;
+                                    }
+                                    else{
+                                        roleresponse[req_role] = false;
+                                    }
+                                });
+            
+                                return roleresponse;
+                            }
+                            else{
+                                return null;
+                            }
+                        }
+                        else{
+                            return null;
+                        }
+            
+                    }
+                    else{
+                        return null;
+                    }
+                }
+                catch(e){
+                    return null;
+                }
+        
+            },
+            getUserGroupMembership: function(){
+                try{
+                    if(Ajkeycloak.instance.keycloak.token){
+                        var userinfo = Ajkeycloak.instance.jwtDecode(Ajkeycloak.instance.keycloak.token);
+                        if(userinfo["group-membership"]){
+                            return JSON.parse(JSON.stringify(userinfo["group-membership"]));
+                        }
+                        else{
+                            return null;
+                        }
+                    }
+                    else{
+                        return null;
+                    }
+                }
+                catch(e){
+                    return null;
+                }
+            },
+            userBelongsToGroups: function(req_groups){
+                try{
+                    if(req_groups){
+                        var groups =  Ajkeycloak.instance.getUserGroupMembership();
+            
+                        if(groups){
+                            if(typeof req_groups === 'string'){
+                                var matches = [];
+                                var present = groups.map(function(group){
+                                    var match_string = membership_path_check(req_groups, group);
+                                    if(match_string){
+                                        matches.push(match_string);
+                                    }
+                                    return match_string ? true : false;
+                                });
+            
+                                return matches;
+                            }
+                            else if(typeof req_groups === 'object' && req_groups.length){
+                                var group_present = {};
+            
+                                req_groups.map(function(req_group){
+                                    var groupsfound = groups.filter(function(group){
+                                        var match_string = membership_path_check(req_group, group);
+                                        return match_string ? true : false;
+                                    });
+            
+                                    if(groupsfound){
+                                        group_present[req_group] = groupsfound;
+                                    }
+                                    else{
+                                        group_present[req_group] = [];
+                                    }
+                                });
+            
+                                return group_present;
+                            }
+                            else{
+                                return null;
+                            }
+                        }
+                        else{
+                            return null;
+                        }
+                    }
+                    else{
+                        return null;
+                    }
+                }
+                catch(e){
+                    return null;
+                }
+        
             }
-
         }
     })()
 
